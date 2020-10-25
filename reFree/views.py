@@ -10,6 +10,7 @@ from reFree.serializers import UserSerializer,CompanySerializer,SocialLinksSeria
 from django.contrib.auth.forms import AuthenticationForm,UserCreationForm
 from django.contrib.auth import authenticate, login,logout
 from django.views import View
+from reFree.forms import Signupform
 from rest_framework.permissions import AllowAny
 #from django_project import helpers
 
@@ -22,6 +23,25 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
+    @action(detail=False,methods=['post', 'options', ])
+    def signupview(self, request):
+        print(request)
+        print(self.request)
+        authorization_code = self.request.query_params.get('username')
+        print(authorization_code)
+        var = request.data
+        print(var)
+        
+        form = Signupform(request.POST)
+        return Response({'data': 'User Created'})
+        print(form.is_valid())
+        
+        if form.is_valid():
+            user = form.save()
+            return Response({'data': 'User Created'})
+
+        return Response({'data': 'Invalid Username or Password'})
+
     @action(detail=False,methods=['get','post', 'options', ])
     def loginview(self, request):
         print(request)
@@ -30,7 +50,26 @@ class UserViewSet(viewsets.ModelViewSet):
         print(authorization_code)
         var = request.data
         print(var)
-        return Response({'data': 'User exists'}) 
+         
+        form = AuthenticationForm(request, data=request.data)
+        print(form.is_valid())
+        if form.is_valid():
+            user = authenticate(
+                request,
+                username=form.cleaned_data.get('username'),
+                password=form.cleaned_data.get('password') 
+            ) 
+            print(user.username)
+            if user is None:
+                return Response({'data': 'Invalid Username or Password'})
+              
+            print(user.username)
+            login(request, user)
+            print(user.username)
+            return Response({'data': 'User exists', 'username':self.request.user.username})
+         # invalid username/ password # user does not exist in db
+        return Response({'data': 'Invalid Username or Password'})  
+
 
 class CompanyViewSet(viewsets.ModelViewSet):
    
@@ -78,7 +117,7 @@ def home(request):
         'socialLinks':socialLinks
     }
     return render(request,'home.html',context)
-class signup_view(View):
+"""class signup_view(View):
     def get(self, request):
         return render(request, 'signup.html', { 'form': UserCreationForm() })
 
@@ -88,7 +127,7 @@ class signup_view(View):
             user = form.save()
             return redirect(reverse('login'))
 
-        return render(request, 'signup.html', { 'form': form })
+        return render(request, 'signup.html', { 'form': form })"""
 
 
 """class loginview(View):
